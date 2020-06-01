@@ -1,3 +1,9 @@
+python3.10 (3.10.0~a0-140-gc8966667bb-1+xenial1) xenial; urgency=medium
+
+  * Update to v3.10.0a0-140-gc8966667bb (2020-06-01).
+
+ -- Anthony Sottile (deadsnakes) <asottile+deadsnakes@umich.edu>  Mon, 01 Jun 2020 16:04:11 +0000
+
 python3.10 (3.10.0~a0-1+xenial1) xenial; urgency=medium
 
   * repackage python3.9 for python3.10
