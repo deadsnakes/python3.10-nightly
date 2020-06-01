@@ -1,4 +1,4 @@
-python3.10 (3.10.0~a0-1+bionic1) bionic; urgency=medium
+python3.10 (3.10.0~a0-1+xenial1) xenial; urgency=medium
 
   * repackage python3.9 for python3.10
 
