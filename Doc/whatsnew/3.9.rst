@@ -562,6 +562,12 @@ Previously, :attr:`sys.stderr` was block-buffered when non-interactive. Now
 ``stderr`` defaults to always being line-buffered.
 (Contributed by Jendrik Seipp in :issue:`13601`.)
 
+tracemalloc
+-----------
+
+Added :func:`tracemalloc.reset_peak` to set the peak size of traced memory
+blocks to the current size, to measure the peak of specific pieces of code.
+(Contributed by Huon Wilson in :issue:`40630`.)
 
 typing
 ------
@@ -1091,6 +1097,10 @@ Porting to Python 3.9
 * The global variable :c:data:`PyStructSequence_UnnamedField` is now a constant
   and refers to a constant string.
   (Contributed by Serhiy Storchaka in :issue:`38650`.)
+
+* The :c:type:`PyGC_Head` structure is now opaque. It is only defined in the
+  internal C API (``pycore_gc.h``).
+  (Contributed by Victor Stinner in :issue:`40241`.)
 
 
 Removed
