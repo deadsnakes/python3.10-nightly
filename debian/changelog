@@ -1,3 +1,9 @@
+python3.10 (3.10.0~a0-163-g5b9fbbabac-1+focal1) focal; urgency=medium
+
+  * Update to v3.10.0a0-163-g5b9fbbabac (2020-06-03).
+
+ -- Anthony Sottile (deadsnakes) <asottile+deadsnakes@umich.edu>  Wed, 03 Jun 2020 15:02:09 +0000
+
 python3.10 (3.10.0~a0-156-g26881c8fae-1+focal1) focal; urgency=medium
 
   * Update to v3.10.0a0-156-g26881c8fae (2020-06-02).
