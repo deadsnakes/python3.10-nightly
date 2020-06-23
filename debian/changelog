@@ -1,3 +1,9 @@
+python3.10 (3.10.0~a0-344-g26a1ad1c24-1+xenial1) xenial; urgency=medium
+
+  * Update to v3.10.0a0-344-g26a1ad1c24 (2020-06-23).
+
+ -- Anthony Sottile <asottile@umich.edu>  Tue, 23 Jun 2020 12:28:00 -0700
+
 python3.10 (3.10.0~a0-342-gc96d00e88e-1+xenial1) xenial; urgency=medium
 
   * Update to v3.10.0a0-342-gc96d00e88e (2020-06-22).
