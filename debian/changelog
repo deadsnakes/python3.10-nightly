@@ -1,3 +1,9 @@
+python3.10 (3.10.0~a0-420-g694d31e714-1+focal1) focal; urgency=medium
+
+  * Update to v3.10.0a0-420-g694d31e714 (2020-06-30).
+
+ -- Anthony Sottile <asottile@umich.edu>  Tue, 30 Jun 2020 09:11:26 -0700
+
 python3.10 (3.10.0~a0-404-gcd3c2bdd5d-1+focal1) focal; urgency=medium
 
   * Update to v3.10.0a0-404-gcd3c2bdd5d (2020-06-28).
