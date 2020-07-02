@@ -1257,12 +1257,13 @@ flush_std_files(void)
 
 
 static void
-finalize_interp_types(PyThreadState *tstate, int is_main_interp)
+finalize_interp_types(PyThreadState *tstate)
 {
     _PyExc_Fini(tstate);
     _PyFrame_Fini(tstate);
     _PyAsyncGen_Fini(tstate);
     _PyContext_Fini(tstate);
+    _PyUnicode_ClearInterned(tstate);
 
     _PyDict_Fini(tstate);
     _PyList_Fini(tstate);
@@ -1300,7 +1301,7 @@ finalize_interp_clear(PyThreadState *tstate)
 
     _PyWarnings_Fini(tstate->interp);
 
-    finalize_interp_types(tstate, is_main_interp);
+    finalize_interp_types(tstate);
 }
 
 
