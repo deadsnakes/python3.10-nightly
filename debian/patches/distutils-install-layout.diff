@@ -278,7 +278,7 @@ index 8979365..59b1099 100644
              sitepackages.append(prefix)
  
 diff --git a/Lib/test/test_site.py b/Lib/test/test_site.py
-index ec86c64..086279c 100644
+index 5901939..afffe8d 100644
 --- a/Lib/test/test_site.py
 +++ b/Lib/test/test_site.py
 @@ -270,16 +270,16 @@ class HelperFunctionsTests(unittest.TestCase):
