@@ -1009,6 +1009,9 @@ class TestEnum(unittest.TestCase):
                 cyan = 4
                 magenta = 5
                 yellow = 6
+        with self.assertRaisesRegex(TypeError, "EvenMoreColor: cannot extend enumeration 'Color'"):
+            class EvenMoreColor(Color, IntEnum):
+                chartruese = 7
 
     def test_exclude_methods(self):
         class whatever(Enum):
@@ -1834,6 +1837,17 @@ class TestEnum(unittest.TestCase):
                 def _generate_next_value_(name, start, count, last):
                     return name
 
+    def test_auto_order_wierd(self):
+        weird_auto = auto()
+        weird_auto.value = 'pathological case'
+        class Color(Enum):
+            red = weird_auto
+            def _generate_next_value_(name, start, count, last):
+                return name
+            blue = auto()
+        self.assertEqual(list(Color), [Color.red, Color.blue])
+        self.assertEqual(Color.red.value, 'pathological case')
+        self.assertEqual(Color.blue.value, 'blue')
 
     def test_duplicate_auto(self):
         class Dupes(Enum):
@@ -1841,6 +1855,18 @@ class TestEnum(unittest.TestCase):
             second = auto()
             third = auto()
         self.assertEqual([Dupes.first, Dupes.second, Dupes.third], list(Dupes))
+
+    def test_default_missing(self):
+        class Color(Enum):
+            RED = 1
+            GREEN = 2
+            BLUE = 3
+        try:
+            Color(7)
+        except ValueError as exc:
+            self.assertTrue(exc.__context__ is None)
+        else:
+            raise Exception('Exception not raised.')
 
     def test_missing(self):
         class Color(Enum):
@@ -1860,7 +1886,12 @@ class TestEnum(unittest.TestCase):
                     # trigger not found
                     return None
         self.assertIs(Color('three'), Color.blue)
-        self.assertRaises(ValueError, Color, 7)
+        try:
+            Color(7)
+        except ValueError as exc:
+            self.assertTrue(exc.__context__ is None)
+        else:
+            raise Exception('Exception not raised.')
         try:
             Color('bad return')
         except TypeError as exc:
@@ -2319,6 +2350,12 @@ class TestFlag(unittest.TestCase):
         self.assertFalse(W in RX)
         self.assertFalse(X in RW)
 
+    def test_member_iter(self):
+        Color = self.Color
+        self.assertEqual(list(Color.PURPLE), [Color.BLUE, Color.RED])
+        self.assertEqual(list(Color.BLUE), [Color.BLUE])
+        self.assertEqual(list(Color.GREEN), [Color.GREEN])
+
     def test_auto_number(self):
         class Color(Flag):
             red = auto()
@@ -2773,6 +2810,12 @@ class TestIntFlag(unittest.TestCase):
         self.assertFalse(X in RW)
         with self.assertRaises(TypeError):
             self.assertFalse('test' in RW)
+
+    def test_member_iter(self):
+        Color = self.Color
+        self.assertEqual(list(Color.PURPLE), [Color.BLUE, Color.RED])
+        self.assertEqual(list(Color.BLUE), [Color.BLUE])
+        self.assertEqual(list(Color.GREEN), [Color.GREEN])
 
     def test_bool(self):
         Perm = self.Perm
