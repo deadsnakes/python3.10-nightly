@@ -231,6 +231,12 @@ New Features
   Python executable.
   (Contributed by Victor Stinner in :issue:`23427`.)
 
+* The :c:func:`PyDateTime_DATE_GET_TZINFO` and
+  :c:func:`PyDateTime_TIME_GET_TZINFO` macros have been added for accessing
+  the ``tzinfo`` attributes of :class:`datetime.datetime` and
+  :class:`datetime.time` objects.
+  (Contributed by Zackery Spytz in :issue:`30155`.)
+
 Porting to Python 3.10
 ----------------------
 
@@ -314,3 +320,7 @@ Removed
 * Removed ``PyUnicode_AsUnicodeCopy()``. Please use :c:func:`PyUnicode_AsUCS4Copy` or
   :c:func:`PyUnicode_AsWideCharString`
   (Contributed by Inada Naoki in :issue:`41103`.)
+
+* Removed ``_Py_CheckRecursionLimit`` variable: it has been replaced by
+  ``ceval.recursion_limit`` of the :c:type:`PyInterpreterState` structure.
+  (Contributed by Victor Stinner in :issue:`41834`.)
