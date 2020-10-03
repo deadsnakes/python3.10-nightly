@@ -903,7 +903,7 @@ These are not used in annotations. They are building blocks for creating generic
    Such a protocol can be used with :func:`isinstance` and :func:`issubclass`.
    This raises :exc:`TypeError` when applied to a non-protocol class.  This
    allows a simple-minded structural check, very similar to "one trick ponies"
-   in :mod:`collections.abc` such as :class:`Iterable`.  For example::
+   in :mod:`collections.abc` such as :class:`~collections.abc.Iterable`.  For example::
 
       @runtime_checkable
       class Closable(Protocol):
@@ -1666,12 +1666,13 @@ Introspection helpers
    Check if a type is a :class:`TypedDict`.
 
    For example::
-        class Film(TypedDict):
-            title: str
-            year: int
 
-        is_typeddict(Film)  # => True
-        is_typeddict(Union[list, str])  # => False
+      class Film(TypedDict):
+          title: str
+          year: int
+
+      is_typeddict(Film)  # => True
+      is_typeddict(Union[list, str])  # => False
 
    .. versionadded:: 3.10
 
