@@ -747,10 +747,10 @@ done:
 int
 PyNumber_Check(PyObject *o)
 {
-    return o && Py_TYPE(o)->tp_as_number &&
-           (Py_TYPE(o)->tp_as_number->nb_index ||
-            Py_TYPE(o)->tp_as_number->nb_int ||
-            Py_TYPE(o)->tp_as_number->nb_float);
+    if (o == NULL)
+        return 0;
+    PyNumberMethods *nb = Py_TYPE(o)->tp_as_number;
+    return nb && (nb->nb_index || nb->nb_int || nb->nb_float || PyComplex_Check(o));
 }
 
 /* Binary operators */
@@ -1461,7 +1461,7 @@ PyNumber_Long(PyObject *o)
     }
 
     return type_error("int() argument must be a string, a bytes-like object "
-                      "or a number, not '%.200s'", o);
+                      "or a real number, not '%.200s'", o);
 }
 
 PyObject *
@@ -2669,6 +2669,30 @@ PyIter_Next(PyObject *iter)
     return result;
 }
 
+PySendResult
+PyIter_Send(PyObject *iter, PyObject *arg, PyObject **result)
+{
+    _Py_IDENTIFIER(send);
+    assert(result != NULL);
+
+    if (PyGen_CheckExact(iter) || PyCoro_CheckExact(iter)) {
+        return PyGen_Send((PyGenObject *)iter, arg, result);
+    }
+
+    if (arg == Py_None && PyIter_Check(iter)) {
+        *result = Py_TYPE(iter)->tp_iternext(iter);
+    }
+    else {
+        *result = _PyObject_CallMethodIdOneArg(iter, &PyId_send, arg);
+    }
+    if (*result != NULL) {
+        return PYGEN_NEXT;
+    }
+    if (_PyGen_FetchStopIterationValue(result) == 0) {
+        return PYGEN_RETURN;
+    }
+    return PYGEN_ERROR;
+}
 
 /*
  * Flatten a sequence of bytes() objects into a C array of
