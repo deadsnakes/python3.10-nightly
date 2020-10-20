@@ -23,7 +23,7 @@ diff --git a/Lib/distutils/command/install.py b/Lib/distutils/command/install.py
 index aaa300e..1067e67 100644
 --- a/Lib/distutils/command/install.py
 +++ b/Lib/distutils/command/install.py
-@@ -35,6 +35,20 @@ INSTALL_SCHEMES = {
+@@ -35,6 +35,20 @@
          'scripts': '$base/bin',
          'data'   : '$base',
          },
@@ -54,7 +54,7 @@ index aaa300e..1067e67 100644
          ]
  
      boolean_options = ['compile', 'force', 'skip-build']
-@@ -151,6 +168,7 @@ class install(Command):
+@@ -151,6 +168,7 @@ def initialize_options(self):
          self.exec_prefix = None
          self.home = None
          self.user = 0
@@ -62,7 +62,7 @@ index aaa300e..1067e67 100644
  
          # These select only the installation base; it's up to the user to
          # specify the installation scheme (currently, that means supplying
-@@ -172,6 +190,9 @@ class install(Command):
+@@ -172,6 +190,9 @@ def initialize_options(self):
          self.install_userbase = USER_BASE
          self.install_usersite = USER_SITE
  
@@ -72,7 +72,7 @@ index aaa300e..1067e67 100644
          self.compile = None
          self.optimize = None
  
-@@ -414,6 +435,7 @@ class install(Command):
+@@ -414,6 +435,7 @@ def finalize_unix(self):
              self.install_base = self.install_platbase = self.home
              self.select_scheme("unix_home")
          else:
@@ -80,7 +80,7 @@ index aaa300e..1067e67 100644
              if self.prefix is None:
                  if self.exec_prefix is not None:
                      raise DistutilsOptionError(
-@@ -428,7 +450,26 @@ class install(Command):
+@@ -428,7 +450,26 @@ def finalize_unix(self):
  
              self.install_base = self.prefix
              self.install_platbase = self.exec_prefix
@@ -185,7 +185,7 @@ diff --git a/Lib/distutils/tests/test_bdist_dumb.py b/Lib/distutils/tests/test_b
 index 01a233b..f99dec5 100644
 --- a/Lib/distutils/tests/test_bdist_dumb.py
 +++ b/Lib/distutils/tests/test_bdist_dumb.py
-@@ -85,7 +85,7 @@ class BuildDumbTestCase(support.TempdirManager,
+@@ -85,7 +85,7 @@ def test_simple_built(self):
              fp.close()
  
          contents = sorted(filter(None, map(os.path.basename, contents)))
@@ -198,7 +198,7 @@ diff --git a/Lib/distutils/tests/test_install.py b/Lib/distutils/tests/test_inst
 index 51c80e0..2ada481 100644
 --- a/Lib/distutils/tests/test_install.py
 +++ b/Lib/distutils/tests/test_install.py
-@@ -194,7 +194,7 @@ class InstallTestCase(support.TempdirManager,
+@@ -194,7 +194,7 @@ def test_record(self):
          found = [os.path.basename(line) for line in content.splitlines()]
          expected = ['hello.py', 'hello.%s.pyc' % sys.implementation.cache_tag,
                      'sayhi',
@@ -207,7 +207,7 @@ index 51c80e0..2ada481 100644
          self.assertEqual(found, expected)
  
      def test_record_extensions(self):
-@@ -227,7 +227,7 @@ class InstallTestCase(support.TempdirManager,
+@@ -227,7 +227,7 @@ def test_record_extensions(self):
  
          found = [os.path.basename(line) for line in content.splitlines()]
          expected = [_make_ext_name('xx'),
@@ -220,7 +220,7 @@ diff --git a/Lib/pydoc.py b/Lib/pydoc.py
 index e595c39..6d9fc26 100755
 --- a/Lib/pydoc.py
 +++ b/Lib/pydoc.py
-@@ -505,6 +505,7 @@ class Doc:
+@@ -505,6 +505,7 @@ def getdocloc(self, object, basedir=sysconfig.get_path('stdlib')):
                                   'marshal', 'posix', 'signal', 'sys',
                                   '_thread', 'zipimport') or
               (file.startswith(basedir) and
@@ -281,7 +281,7 @@ diff --git a/Lib/test/test_site.py b/Lib/test/test_site.py
 index 2e70880..4d27ac6 100644
 --- a/Lib/test/test_site.py
 +++ b/Lib/test/test_site.py
-@@ -277,16 +277,16 @@ class HelperFunctionsTests(unittest.TestCase):
+@@ -277,16 +277,16 @@ def test_getsitepackages(self):
          if os.sep == '/':
              # OS X, Linux, FreeBSD, etc
              if sys.platlibdir != "lib":
