@@ -14,7 +14,7 @@ diff --git a/Lib/distutils/sysconfig.py b/Lib/distutils/sysconfig.py
 index 181e881..d15e9b2 100644
 --- a/Lib/distutils/sysconfig.py
 +++ b/Lib/distutils/sysconfig.py
-@@ -13,6 +13,7 @@ import _imp
+@@ -13,6 +13,7 @@
  import os
  import re
  import sys
