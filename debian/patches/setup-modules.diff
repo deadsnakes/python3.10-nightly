@@ -7,7 +7,7 @@ Subject: setup-modules
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/Modules/Setup b/Modules/Setup
-index 87f3a7c..9001895 100644
+index 6f9bb81..75a5072 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
 @@ -175,7 +175,7 @@ _symtable symtablemodule.c
