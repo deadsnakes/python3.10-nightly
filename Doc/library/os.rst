@@ -1441,7 +1441,7 @@ or `the MSDN <https://msdn.microsoft.com/en-us/library/z0kc8e3z.aspx>`_ on Windo
    make sense to block because there are no writers connected to the write end
    of the pipe.
 
-   .. availability:: Linux kernel >= 2.6.17 or glibc >= 2.5
+   .. availability:: Linux kernel >= 2.6.17 and glibc >= 2.5
 
    .. versionadded:: 3.10
 
@@ -1450,6 +1450,7 @@ or `the MSDN <https://msdn.microsoft.com/en-us/library/z0kc8e3z.aspx>`_ on Windo
           SPLICE_F_NONBLOCK
           SPLICE_F_MORE
 
+   .. versionadded:: 3.10
 
 .. function:: readv(fd, buffers)
 
