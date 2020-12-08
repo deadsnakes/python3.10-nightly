@@ -1,3 +1,9 @@
+python3.10 (3.10.0~a3-4-g233fddfe39-1+bionic1) bionic; urgency=medium
+
+  * Update to v3.10.0a3-4-g233fddfe39 (2020-12-08).
+
+ -- Anthony Sottile (deadsnakes) <asottile+deadsnakes@umich.edu>  Tue, 08 Dec 2020 08:54:16 +0000
+
 python3.10 (3.10.0~a2-282-gc266736ec1-1+bionic1) bionic; urgency=medium
 
   * Update to v3.10.0a2-282-gc266736ec1 (2020-12-07).
