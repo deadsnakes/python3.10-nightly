@@ -9,7 +9,7 @@ Subject: deb-setup
  1 file changed, 5 insertions(+), 8 deletions(-)
 
 diff --git a/setup.py b/setup.py
-index a4d21d4..eaa47c2 100644
+index 8445546..0cc4e3e 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -440,8 +440,10 @@ def set_compiler_executables(self):
@@ -25,7 +25,7 @@ index a4d21d4..eaa47c2 100644
          self.compiler.set_executables(**args)
  
      def build_extensions(self):
-@@ -736,12 +738,7 @@ def add_ldflags_cppflags(self):
+@@ -784,12 +786,7 @@ def add_ldflags_cppflags(self):
                          add_dir_to_list(dir_list, directory)
  
      def configure_compiler(self):
