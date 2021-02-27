@@ -276,9 +276,18 @@ Other Language Changes
   the :meth:`~object.__int__` method but do not have the
   :meth:`~object.__index__` method).
   (Contributed by Serhiy Storchaka in :issue:`37999`.)
+* If :func:`object.__ipow__` returns :const:`NotImplemented`, the operator will
+  correctly fall back to :func:`object.__pow__` and :func:`object.__rpow__` as expected.
+  (Contributed by Alex Shkop in :issue:`38302`.)
 
 * Assignment expressions can now be used unparenthesized within set literals
   and set comprehensions, as well as in sequence indexes (but not slices).
+
+* Functions have a new ``__builtins__`` attribute which is used to look for
+  builtin symbols when a function is executed, instead of looking into
+  ``__globals__['__builtins__']``. The attribute is initialized from
+  ``__globals__["__builtins__"]`` if it exists, else from the current builtins.
+  (Contributed by Mark Shannon in :issue:`42990`.)
 
 
 New Modules
@@ -784,6 +793,14 @@ Changes in the Python API
   (Contributed by Yurii Karabas, Andrew Svetlov, Yury Selivanov and Kyle Stanley
   in :issue:`42392`.)
 
+* The :data:`types.FunctionType` constructor now inherits the current builtins
+  if the *globals* dictionary has no ``"__builtins__"`` key, rather than using
+  ``{"None": None}`` as builtins: same behavior as :func:`eval` and
+  :func:`exec` functions.  Defining a function with ``def function(...): ...``
+  in Python is not affected, globals cannot be overriden with this syntax: it
+  also inherits the current builtins.
+  (Contributed by Victor Stinner in :issue:`42990`.)
+
 CPython bytecode changes
 ========================
 
@@ -819,6 +836,12 @@ Build Changes
   ``ensurepip._bundled`` package.
 
   (Contributed by Victor Stinner in :issue:`42856`.)
+
+* Add a new configure ``--without-static-libpython`` option to not build the
+  ``libpythonMAJOR.MINOR.a`` static library and not install the ``python.o``
+  object file.
+
+  (Contributed by Victor Stinner in :issue:`43103`.)
 
 
 C API Changes
@@ -873,6 +896,9 @@ New Features
 * The :c:func:`PyType_GetSlot` function can accept static types.
   (Contributed by Hai Shi and Petr Viktorin in :issue:`41073`.)
 
+* Add a new :c:func:`PySet_CheckExact` function to the C-API to check if an
+  object is an instance of :class:`set` but not an instance of a subtype.
+  (Contributed by Pablo Galindo in :issue:`43277`.)
 
 Porting to Python 3.10
 ----------------------
@@ -922,6 +948,14 @@ Porting to Python 3.10
   ``PyList_SET_ITEM(a, b, c) = x`` now fail with a compiler error. It prevents
   bugs like ``if (PyList_SET_ITEM (a, b, c) < 0) ...`` test.
   (Contributed by Zackery Spytz and Victor Stinner in :issue:`30459`.)
+
+* The non-limited API files ``odictobject.h``, ``parser_interface.h``,
+  ``picklebufobject.h``, ``pyarena.h``, ``pyctype.h``, ``pydebug.h``,
+  ``pyfpe.h``, and ``pytime.h`` have been moved to the ``Include/cpython``
+  directory. These files must not be included directly, as they are already
+  included in ``Python.h``: :ref:`Include Files <api-includes>`. If they have
+  been included directly, consider including ``Python.h`` instead.
+  (Contributed by Nicholas Sim in :issue:`35134`)
 
 Deprecated
 ----------
