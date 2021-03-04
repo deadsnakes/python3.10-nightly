@@ -9,7 +9,7 @@ Subject: tempfile-minimal
  1 file changed, 141 insertions(+), 2 deletions(-)
 
 diff --git a/Lib/tempfile.py b/Lib/tempfile.py
-index c3fe61a..dc43c8d 100644
+index dc088d9..499fd3d 100644
 --- a/Lib/tempfile.py
 +++ b/Lib/tempfile.py
 @@ -40,7 +40,146 @@
@@ -160,7 +160,7 @@ index c3fe61a..dc43c8d 100644
  import errno as _errno
  from random import Random as _Random
  import sys as _sys
-@@ -806,7 +945,7 @@ def resetperms(path):
+@@ -814,7 +953,7 @@ def resetperms(path):
              else:
                  raise
  
