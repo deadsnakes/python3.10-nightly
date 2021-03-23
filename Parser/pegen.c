@@ -147,7 +147,11 @@ byte_offset_to_character_offset(PyObject *line, Py_ssize_t col_offset)
     if (!str) {
         return 0;
     }
-    assert(col_offset >= 0 && (unsigned long)col_offset <= strlen(str));
+    Py_ssize_t len = strlen(str);
+    if (col_offset > len) {
+        col_offset = len;
+    }
+    assert(col_offset >= 0);
     PyObject *text = PyUnicode_DecodeUTF8(str, col_offset, "replace");
     if (!text) {
         return 0;
@@ -324,6 +328,7 @@ tokenizer_error(Parser *p)
 
     const char *msg = NULL;
     PyObject* errtype = PyExc_SyntaxError;
+    Py_ssize_t col_offset = -1;
     switch (p->tok->done) {
         case E_TOKEN:
             msg = "invalid token";
@@ -355,16 +360,14 @@ tokenizer_error(Parser *p)
             msg = "too many levels of indentation";
             break;
         case E_LINECONT:
+            col_offset = strlen(strtok(p->tok->buf, "\n")) - 1;
             msg = "unexpected character after line continuation character";
             break;
         default:
             msg = "unknown parsing error";
     }
 
-    PyErr_Format(errtype, msg);
-    // There is no reliable column information for this error
-    PyErr_SyntaxLocationObject(p->tok->filename, p->tok->lineno, 0);
-
+    RAISE_ERROR_KNOWN_LOCATION(p, errtype, p->tok->lineno, col_offset, msg);
     return -1;
 }
 
@@ -392,10 +395,10 @@ _PyPegen_raise_error(Parser *p, PyObject *errtype, const char *errmsg, ...)
 static PyObject *
 get_error_line(Parser *p, Py_ssize_t lineno)
 {
-    /* If p->tok->fp == NULL, then we're parsing from a string, which means that
-       the whole source is stored in p->tok->str. If not, then we're parsing
-       from the REPL, so the source lines of the current (multi-line) statement
-       are stored in p->tok->stdin_content */
+    /* If the file descriptor is interactive, the source lines of the current
+     * (multi-line) statement are stored in p->tok->interactive_src_start.
+     * If not, we're parsing from a string, which means that the whole source
+     * is stored in p->tok->str. */
     assert(p->tok->fp == NULL || p->tok->fp == stdin);
 
     char *cur_line = p->tok->fp_interactive ? p->tok->interactive_src_start : p->tok->str;
