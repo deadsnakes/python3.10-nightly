@@ -4,7 +4,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <token.h>
-#include <Python-ast.h>
+#include <pycore_ast.h>
 
 #if 0
 #define PyPARSE_YIELD_IS_KEYWORD        0x0001
@@ -101,7 +101,7 @@ typedef struct {
     arg_ty kwarg;
 } StarEtc;
 
-typedef struct { operator_ty kind; } AugOperator; 
+typedef struct { operator_ty kind; } AugOperator;
 typedef struct {
     void *element;
     int is_keyword;
@@ -227,7 +227,6 @@ void _PyPegen_Parser_Free(Parser *);
 mod_ty _PyPegen_run_parser_from_file_pointer(FILE *, int, PyObject *, const char *,
                                     const char *, const char *, PyCompilerFlags *, int *, PyArena *);
 void *_PyPegen_run_parser(Parser *);
-mod_ty _PyPegen_run_parser_from_file(const char *, int, PyObject *, PyCompilerFlags *, PyArena *);
 mod_ty _PyPegen_run_parser_from_string(const char *, int, PyObject *, PyCompilerFlags *, PyArena *);
 asdl_stmt_seq *_PyPegen_interactive_exit(Parser *);
 asdl_seq *_PyPegen_singleton_seq(Parser *, void *);
