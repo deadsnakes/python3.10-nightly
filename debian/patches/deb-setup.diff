@@ -9,7 +9,7 @@ Subject: deb-setup
  1 file changed, 5 insertions(+), 8 deletions(-)
 
 diff --git a/setup.py b/setup.py
-index e3fbd78..b49ef66 100644
+index 75bd163..43855cf 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -440,8 +440,10 @@ def set_compiler_executables(self):
