@@ -278,10 +278,10 @@ index 939893e..0fb8a3f 100644
              sitepackages.append(prefix)
  
 diff --git a/Lib/test/test_site.py b/Lib/test/test_site.py
-index 6060288..31b532c 100644
+index 9b4ab42..1c556a0 100644
 --- a/Lib/test/test_site.py
 +++ b/Lib/test/test_site.py
-@@ -281,16 +281,16 @@ def test_getsitepackages(self):
+@@ -282,16 +282,16 @@ def test_getsitepackages(self):
          if os.sep == '/':
              # OS X, Linux, FreeBSD, etc
              if sys.platlibdir != "lib":
