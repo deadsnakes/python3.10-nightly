@@ -136,10 +136,10 @@ index 0ddc736..0a71b61 100644
          self.outputs = [self.target]
  
 diff --git a/Lib/distutils/sysconfig.py b/Lib/distutils/sysconfig.py
-index 37feae5..6edad79 100644
+index aa63093..3be630a 100644
 --- a/Lib/distutils/sysconfig.py
 +++ b/Lib/distutils/sysconfig.py
-@@ -138,6 +138,7 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
+@@ -217,6 +217,7 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
      If 'prefix' is supplied, use it instead of sys.base_prefix or
      sys.base_exec_prefix -- i.e., ignore 'plat_specific'.
      """
@@ -147,7 +147,7 @@ index 37feae5..6edad79 100644
      if prefix is None:
          if standard_lib:
              prefix = plat_specific and BASE_EXEC_PREFIX or BASE_PREFIX
-@@ -156,6 +157,12 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
+@@ -235,6 +236,12 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
                                   "python" + get_python_version())
          if standard_lib:
              return libpython
@@ -174,10 +174,10 @@ index 01a233b..f99dec5 100644
              wanted.append('foo.%s.pyc' % sys.implementation.cache_tag)
          self.assertEqual(contents, sorted(wanted))
 diff --git a/Lib/distutils/tests/test_install.py b/Lib/distutils/tests/test_install.py
-index 21a7b7c..1482431 100644
+index 0632024..bfc8fe1 100644
 --- a/Lib/distutils/tests/test_install.py
 +++ b/Lib/distutils/tests/test_install.py
-@@ -196,7 +196,7 @@ def test_record(self):
+@@ -205,7 +205,7 @@ def test_record(self):
          found = [os.path.basename(line) for line in content.splitlines()]
          expected = ['hello.py', 'hello.%s.pyc' % sys.implementation.cache_tag,
                      'sayhi',
@@ -186,7 +186,7 @@ index 21a7b7c..1482431 100644
          self.assertEqual(found, expected)
  
      def test_record_extensions(self):
-@@ -229,7 +229,7 @@ def test_record_extensions(self):
+@@ -238,7 +238,7 @@ def test_record_extensions(self):
  
          found = [os.path.basename(line) for line in content.splitlines()]
          expected = [_make_ext_name('xx'),
