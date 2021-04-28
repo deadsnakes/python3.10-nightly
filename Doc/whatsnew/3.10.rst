@@ -743,6 +743,16 @@ See :pep:`613` for more details.
 
 (Contributed by Mikhail Golubev in :issue:`41923`.)
 
+PEP 647: User-Defined Type Guards
+---------------------------------
+
+:data:`TypeGuard` has been added to the :mod:`typing` module to annotate
+type guard functions and improve information provided to static type checkers
+during type narrowing.  For more information, please see :data:`TypeGuard`\ 's
+documentation, and :pep:`647`.
+
+(Contributed by Ken Jin and Guido van Rossum in :issue:`43766`.
+PEP written by Eric Traut.)
 
 Other Language Changes
 ======================
@@ -1232,6 +1242,12 @@ Optimizations
   <https://developers.redhat.com/blog/2020/06/25/red-hat-enterprise-linux-8-2-brings-faster-python-3-8-run-speeds/>`_
   for more details. (Contributed by Victor Stinner and Pablo Galindo in
   :issue:`38980`.)
+
+* Use a new output buffer management code for :mod:`bz2` / :mod:`lzma` /
+  :mod:`zlib` modules, and add ``.readall()`` function to
+  ``_compression.DecompressReader`` class. bz2 decompression 1.09x ~ 1.17x
+  faster, lzma decompression 1.20x ~ 1.32x faster, ``GzipFile.read(-1)`` 1.11x
+  ~ 1.18x faster. (Contributed by Ma Lin, reviewed by Gregory P. Smith, in :issue:`41486`)
 
 * Function parameters and their annotations are no longer computed at runtime,
   but rather at compilation time.  They are stored as a tuple of strings at the
