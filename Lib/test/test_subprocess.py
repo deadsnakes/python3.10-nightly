@@ -2147,11 +2147,7 @@ class POSIXProcessTestCase(BaseTestCase):
     def test_preexec_gc_module_failure(self):
         # This tests the code that disables garbage collection if the child
         # process will execute any Python.
-        def raise_runtime_error():
-            raise RuntimeError("this shouldn't escape")
         enabled = gc.isenabled()
-        orig_gc_disable = gc.disable
-        orig_gc_isenabled = gc.isenabled
         try:
             gc.disable()
             self.assertFalse(gc.isenabled())
@@ -2165,19 +2161,7 @@ class POSIXProcessTestCase(BaseTestCase):
             subprocess.call([sys.executable, '-c', ''],
                             preexec_fn=lambda: None)
             self.assertTrue(gc.isenabled(), "Popen left gc disabled.")
-
-            gc.disable = raise_runtime_error
-            self.assertRaises(RuntimeError, subprocess.Popen,
-                              [sys.executable, '-c', ''],
-                              preexec_fn=lambda: None)
-
-            del gc.isenabled  # force an AttributeError
-            self.assertRaises(AttributeError, subprocess.Popen,
-                              [sys.executable, '-c', ''],
-                              preexec_fn=lambda: None)
         finally:
-            gc.disable = orig_gc_disable
-            gc.isenabled = orig_gc_isenabled
             if not enabled:
                 gc.disable()
 
