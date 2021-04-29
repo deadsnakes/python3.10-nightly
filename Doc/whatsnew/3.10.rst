@@ -1427,6 +1427,9 @@ Deprecated
   Python 3.12. Use :meth:`pathlib.Path.hardlink_to` instead.
   (Contributed by Barney Gale in :issue:`39950`.)
 
+* ``cgi.log()`` is deprecated and slated for for removal in Python 3.12.
+  (Contributed by Inada Naoki in :issue:`41139`.)
+
 
 Removed
 =======
@@ -1665,7 +1668,8 @@ New Features
   slot.
   (Contributed by Hai Shi in :issue:`41832`.)
 
-* The :c:func:`PyType_GetSlot` function can accept static types.
+* The :c:func:`PyType_GetSlot` function can accept
+  :ref:`static types <static-types>`.
   (Contributed by Hai Shi and Petr Viktorin in :issue:`41073`.)
 
 * Add a new :c:func:`PySet_CheckExact` function to the C-API to check if an
@@ -1696,6 +1700,13 @@ New Features
   test if an object is, respectively, the ``None`` singleton, the ``True``
   singleton or the ``False`` singleton.
   (Contributed by Victor Stinner in :issue:`43753`.)
+
+* Add new functions to quickly control the garbage collector from C code:
+  :c:func:`PyGC_Enable()`,
+  :c:func:`PyGC_Disable()`,
+  :c:func:`PyGC_IsEnabled()`.
+  These functions allow to activate, deactivate and query the state of the garbage collector from C code without
+  having to import the :mod:`gc` module.
 
 Porting to Python 3.10
 ----------------------
