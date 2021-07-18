@@ -33,6 +33,7 @@ import weakref
 import types
 
 from test import mod_generics_cache
+from test import _typed_dict_helper
 
 
 class BaseTestCase(TestCase):
@@ -2276,13 +2277,6 @@ class ClassVarTests(BaseTestCase):
         with self.assertRaises(TypeError):
             issubclass(int, ClassVar)
 
-    def test_bad_module(self):
-        # bpo-41515
-        class BadModule:
-            pass
-        BadModule.__module__ = 'bad' # Something not in sys.modules
-        self.assertEqual(get_type_hints(BadModule), {})
-
 class FinalTests(BaseTestCase):
 
     def test_basics(self):
@@ -2810,6 +2804,9 @@ class Point2D(TypedDict):
     x: int
     y: int
 
+class Bar(_typed_dict_helper.Foo, total=False):
+    b: int
+
 class LabelPoint2D(Point2D, Label): ...
 
 class Options(TypedDict, total=False):
@@ -3031,6 +3028,24 @@ class GetTypeHintTests(BaseTestCase):
             x: 'y'
         # This previously raised an error under PEP 563.
         self.assertEqual(get_type_hints(Foo), {'x': str})
+
+    def test_get_type_hints_bad_module(self):
+        # bpo-41515
+        class BadModule:
+            pass
+        BadModule.__module__ = 'bad' # Something not in sys.modules
+        self.assertNotIn('bad', sys.modules)
+        self.assertEqual(get_type_hints(BadModule), {})
+
+    def test_get_type_hints_annotated_bad_module(self):
+        # See https://bugs.python.org/issue44468
+        class BadBase:
+            foo: tuple
+        class BadType(BadBase):
+            bar: list
+        BadType.__module__ = BadBase.__module__ = 'bad'
+        self.assertNotIn('bad', sys.modules)
+        self.assertEqual(get_type_hints(BadType), {'foo': tuple, 'bar': list})
 
 
 class GetUtilitiesTestCase(TestCase):
@@ -3967,6 +3982,12 @@ class TypedDictTests(BaseTestCase):
         assert is_typeddict(Union[str, int]) is False
         # classes, not instances
         assert is_typeddict(Point2D()) is False
+
+    def test_get_type_hints(self):
+        self.assertEqual(
+            get_type_hints(Bar),
+            {'a': typing.Optional[int], 'b': int}
+        )
 
 
 class IOTests(BaseTestCase):

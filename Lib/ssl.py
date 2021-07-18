@@ -94,7 +94,6 @@ import sys
 import os
 from collections import namedtuple
 from enum import Enum as _Enum, IntEnum as _IntEnum, IntFlag as _IntFlag
-from enum import _simple_enum, _test_simple_enum
 
 import _ssl             # if we can't import it, let the error propagate
 
@@ -156,8 +155,7 @@ _PROTOCOL_NAMES = {value: name for name, value in _SSLMethod.__members__.items()
 _SSLv2_IF_EXISTS = getattr(_SSLMethod, 'PROTOCOL_SSLv2', None)
 
 
-@_simple_enum(_IntEnum)
-class TLSVersion:
+class TLSVersion(_IntEnum):
     MINIMUM_SUPPORTED = _ssl.PROTO_MINIMUM_SUPPORTED
     SSLv3 = _ssl.PROTO_SSLv3
     TLSv1 = _ssl.PROTO_TLSv1
@@ -167,8 +165,7 @@ class TLSVersion:
     MAXIMUM_SUPPORTED = _ssl.PROTO_MAXIMUM_SUPPORTED
 
 
-@_simple_enum(_IntEnum)
-class _TLSContentType:
+class _TLSContentType(_IntEnum):
     """Content types (record layer)
 
     See RFC 8446, section B.1
@@ -182,8 +179,7 @@ class _TLSContentType:
     INNER_CONTENT_TYPE = 0x101
 
 
-@_simple_enum(_IntEnum)
-class _TLSAlertType:
+class _TLSAlertType(_IntEnum):
     """Alert types for TLSContentType.ALERT messages
 
     See RFC 8466, section B.2
@@ -224,8 +220,7 @@ class _TLSAlertType:
     NO_APPLICATION_PROTOCOL = 120
 
 
-@_simple_enum(_IntEnum)
-class _TLSMessageType:
+class _TLSMessageType(_IntEnum):
     """Message types (handshake protocol)
 
     See RFC 8446, section B.3
@@ -387,7 +382,7 @@ def match_hostname(cert, hostname):
     returns nothing.
     """
     warnings.warn(
-        "ssl module: match_hostname() is deprecated",
+        "ssl.match_hostname() is deprecated",
         category=DeprecationWarning,
         stacklevel=2
     )
@@ -492,8 +487,7 @@ class SSLContext(_SSLContext):
     def __new__(cls, protocol=None, *args, **kwargs):
         if protocol is None:
             warnings.warn(
-                "ssl module: "
-                "SSLContext() without protocol argument is deprecated.",
+                "ssl.SSLContext() without protocol argument is deprecated.",
                 category=DeprecationWarning,
                 stacklevel=2
             )
@@ -536,7 +530,11 @@ class SSLContext(_SSLContext):
         )
 
     def set_npn_protocols(self, npn_protocols):
-        warnings.warn("NPN is deprecated, use ALPN instead", stacklevel=2)
+        warnings.warn(
+            "ssl NPN is deprecated, use ALPN instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
         protos = bytearray()
         for protocol in npn_protocols:
             b = bytes(protocol, 'ascii')
@@ -940,7 +938,9 @@ class SSLObject:
         if a next protocol was not negotiated or if NPN is not supported by one
         of the peers."""
         warnings.warn(
-            "ssl module: NPN is deprecated, use ALPN instead", stacklevel=2
+            "ssl NPN is deprecated, use ALPN instead",
+            DeprecationWarning,
+            stacklevel=2
         )
 
     def selected_alpn_protocol(self):
@@ -1157,7 +1157,9 @@ class SSLSocket(socket):
     def selected_npn_protocol(self):
         self._checkClosed()
         warnings.warn(
-            "ssl module: NPN is deprecated, use ALPN instead", stacklevel=2
+            "ssl NPN is deprecated, use ALPN instead",
+            DeprecationWarning,
+            stacklevel=2
         )
         return None
 
@@ -1419,7 +1421,7 @@ def wrap_socket(sock, keyfile=None, certfile=None,
                 suppress_ragged_eofs=True,
                 ciphers=None):
     warnings.warn(
-        "ssl module: wrap_socket is deprecated, use SSLContext.wrap_socket()",
+        "ssl.wrap_socket() is deprecated, use SSLContext.wrap_socket()",
         category=DeprecationWarning,
         stacklevel=2
     )
