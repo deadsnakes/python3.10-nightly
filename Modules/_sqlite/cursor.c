@@ -685,12 +685,12 @@ _sqlite3.Cursor.executescript as pysqlite_cursor_executescript
     sql_script as script_obj: object
     /
 
-Executes a multiple SQL statements at once. Non-standard.
+Executes multiple SQL statements at once. Non-standard.
 [clinic start generated code]*/
 
 static PyObject *
 pysqlite_cursor_executescript(pysqlite_Cursor *self, PyObject *script_obj)
-/*[clinic end generated code: output=115a8132b0f200fe input=38c6fa6de570bb9b]*/
+/*[clinic end generated code: output=115a8132b0f200fe input=ba3ec59df205e362]*/
 {
     _Py_IDENTIFIER(commit);
     const char* script_cstr;
@@ -1036,7 +1036,8 @@ static PyType_Slot cursor_slots[] = {
 static PyType_Spec cursor_spec = {
     .name = MODULE_NAME ".Cursor",
     .basicsize = sizeof(pysqlite_Cursor),
-    .flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+              Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE),
     .slots = cursor_slots,
 };
 

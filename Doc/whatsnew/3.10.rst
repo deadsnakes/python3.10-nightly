@@ -4,6 +4,7 @@
 
 :Release: |release|
 :Date: |today|
+:Editor: Pablo Galindo Salgado
 
 .. Rules for maintenance:
 
@@ -65,7 +66,34 @@ Summary -- Release highlights
 
 .. PEP-sized items next.
 
-* :pep:`644`, require OpenSSL 1.1.1 or newer
+New syntax features:
+
+* :pep:`634`, Structural Pattern Matching: Specification
+* :pep:`635`, Structural Pattern Matching: Motivation and Rationale
+* :pep:`636`, Structural Pattern Matching: Tutorial
+* :issue:`12782`, Parenthesized context managers are now officially allowed.
+
+New features in the standard library:
+
+* :pep:`618`, Add Optional Length-Checking To zip.
+
+Interpreter improvements:
+
+* :pep:`626`, Precise line numbers for debugging and other tools.
+
+New typing features:
+
+* :pep:`604`, Allow writing union types as X | Y
+* :pep:`613`, Explicit Type Aliases
+* :pep:`612`, Parameter Specification Variables
+
+Important deprecations, removals or restrictions:
+
+* :pep:`644`, Require OpenSSL 1.1.1 or newer
+* :pep:`632`, Deprecate distutils module.
+* :pep:`623`, Deprecate and prepare for the removal of the wstr member in PyUnicodeObject.
+* :pep:`624`, Remove Py_UNICODE encoder APIs
+* :pep:`597`, Add optional EncodingWarning
 
 
 New Features
@@ -197,7 +225,7 @@ now Python 3.10 will display the exception as:
 This improvement was contributed by Pablo Galindo in :issue:`43914`.
 
 A considerable amount of new specialized messages for :exc:`SyntaxError` exceptions
-have been incorporated. Some of the most notable ones:
+have been incorporated. Some of the most notable ones are as follows:
 
 * Missing ``:`` before blocks:
 
@@ -278,7 +306,7 @@ have been incorporated. Some of the most notable ones:
 
     .. code-block:: python
 
-        >>> try
+        >>> try:
         ...     x = 2
         ... something = 3
           File "<stdin>", line 3
@@ -345,6 +373,11 @@ raised from:
 
 (Contributed by Pablo Galindo in :issue:`38530`.)
 
+   .. warning::
+      Notice this won't work if :c:func:`PyErr_Display` is not called to display the error
+      which can happen if some other custom error display function is used. This is a common
+      scenario in some REPLs like IPython.
+
 NameErrors
 ~~~~~~~~~~
 
@@ -361,6 +394,12 @@ was raised from:
     NameError: name 'schwarschild_black_hole' is not defined. Did you mean: schwarzschild_black_hole?
 
 (Contributed by Pablo Galindo in :issue:`38530`.)
+
+   .. warning::
+      Notice this won't work if :c:func:`PyErr_Display` is not called to display the error,
+      which can happen if some other custom error display function is used. This is a common
+      scenario in some REPLs like IPython.
+
 
 PEP 626: Precise line numbers for debugging and other tools
 -----------------------------------------------------------
@@ -836,6 +875,13 @@ Other Language Changes
   effectless under ``from __future__ import annotations``.
   (Contributed by Batuhan Taskaya in :issue:`42725`.)
 
+* Hashes of NaN values of both :class:`float` type and
+  :class:`decimal.Decimal` type now depend on object identity. Formerly, they
+  always hashed to ``0`` even though NaN values are not equal to one another.
+  This caused potentially quadratic runtime behavior due to excessive hash
+  collisions when creating dictionaries and sets containing multiple NaNs.
+  (Contributed by Raymond Hettinger in :issue:`43475`.)
+
 New Modules
 ===========
 
@@ -864,6 +910,12 @@ array
 The :meth:`~array.array.index` method of :class:`array.array` now has
 optional *start* and *stop* parameters.
 (Contributed by Anders Lorentsen and Zackery Spytz in :issue:`31956`.)
+
+asynchat, asyncore, smtpd
+-------------------------
+These modules have been marked as deprecated in their module documentation
+since Python 3.6.  An import-time :class:`DeprecationWarning` has now been
+added to all three of these modules.
 
 base64
 ------
@@ -963,17 +1015,6 @@ encodings
 :func:`encodings.normalize_encoding` now ignores non-ASCII characters.
 (Contributed by Hai Shi in :issue:`39337`.)
 
-enum
-----
-
-:class:`Enum` :func:`__repr__` now returns ``enum_name.member_name`` and
-:func:`__str__` now returns ``member_name``.  Stdlib enums available as
-module constants have a :func:`repr` of ``module_name.member_name``.
-(Contributed by Ethan Furman in :issue:`40066`.)
-
-Add :class:`enum.StrEnum` for enums where all members are strings.
-(Contributed by Ethan Furman in :issue:`41816`.)
-
 fileinput
 ---------
 
@@ -984,6 +1025,13 @@ Add *encoding* and *errors* parameters in :func:`fileinput.input` and
 :func:`fileinput.hook_compressed` now returns :class:`TextIOWrapper` object
 when *mode* is "r" and file is compressed, like uncompressed files.
 (Contributed by Inada Naoki in :issue:`5758`.)
+
+faulthandler
+------------
+
+The :mod:`faulthandler` module now detects if a fatal error occurs during a
+garbage collector collection.
+(Contributed by Victor Stinner in :issue:`44466`.)
 
 gc
 --
@@ -1053,7 +1101,7 @@ and will be incorrect in some rare cases, including some ``_``-s in
 importlib.metadata
 ------------------
 
-Feature parity with ``importlib_metadata`` 4.4
+Feature parity with ``importlib_metadata`` 4.6
 (`history <https://importlib-metadata.readthedocs.io/en/latest/history.html>`_).
 
 :ref:`importlib.metadata entry points <entry-points>`
@@ -1201,6 +1249,9 @@ The exception :exc:`socket.timeout` is now an alias of :exc:`TimeoutError`.
 Add option to create MPTCP sockets with ``IPPROTO_MPTCP``
 (Contributed by Rui Cunha in :issue:`43571`.)
 
+Add ``IP_RECVTOS`` option to receive the type of service (ToS) or DSCP/ECN fields
+(Contributed by Georg Sauthoff in :issue:`44077`.)
+
 ssl
 ---
 
@@ -1214,18 +1265,11 @@ The ssl module has preliminary support for OpenSSL 3.0.0 and new option
 :issue:`43789`, and :issue:`43811`.)
 
 Deprecated function and use of deprecated constants now result in
-a :exc:`DeprecationWarning`. The following features have been deprecated
-since Python 3.6, Python 3.7, or OpenSSL 1.1.0:
-:data:`~ssl.OP_NO_SSLv2`, :data:`~ssl.OP_NO_SSLv3`, :data:`~ssl.OP_NO_TLSv1`,
-:data:`~ssl.OP_NO_TLSv1_1`, :data:`~ssl.OP_NO_TLSv1_2`,
-:data:`~ssl.OP_NO_TLSv1_3`, :data:`~ssl.PROTOCOL_SSLv2`,
-:data:`~ssl.PROTOCOL_SSLv3`, :data:`~ssl.PROTOCOL_SSLv23`,
-:data:`~ssl.PROTOCOL_TLSv1`, :data:`~ssl.PROTOCOL_TLSv1_1`,
-:data:`~ssl.PROTOCOL_TLSv1_2`, :data:`~ssl.PROTOCOL_TLS`,
-:func:`~ssl.wrap_socket`, :func:`~ssl.match_hostname`,
-:func:`~ssl.RAND_pseudo_bytes`, :func:`~ssl.RAND_egd`,
-:meth:`ssl.SSLSocket.selected_npn_protocol`,
-:meth:`ssl.SSLContext.set_npn_protocols`.
+a :exc:`DeprecationWarning`. :attr:`ssl.SSLContext.options` has
+:data:`~ssl.OP_NO_SSLv2` and :data:`~ssl.OP_NO_SSLv3` set by default and
+therefore cannot warn about setting the flag again. The
+:ref:`deprecation section <whatsnew310-deprecated>` has a list of deprecated
+features.
 (Contributed by Christian Heimes in :issue:`43880`.)
 
 The ssl module now has more secure default settings. Ciphers without forward
@@ -1448,6 +1492,8 @@ Optimizations
   readers or writers, just like its equivalent classes in :mod:`gzip` and
   :mod:`lzma` have always been.  (Contributed by Inada Naoki in :issue:`43785`).
 
+.. _whatsnew310-deprecated:
+
 Deprecated
 ==========
 
@@ -1616,6 +1662,30 @@ Deprecated
 * ``cgi.log()`` is deprecated and slated for removal in Python 3.12.
   (Contributed by Inada Naoki in :issue:`41139`.)
 
+* The following :mod:`ssl` features have been deprecated since Python 3.6,
+  Python 3.7, or OpenSSL 1.1.0 and will be removed in 3.11:
+
+  * :data:`~ssl.OP_NO_SSLv2`, :data:`~ssl.OP_NO_SSLv3`, :data:`~ssl.OP_NO_TLSv1`,
+    :data:`~ssl.OP_NO_TLSv1_1`, :data:`~ssl.OP_NO_TLSv1_2`, and
+    :data:`~ssl.OP_NO_TLSv1_3` are replaced by
+    :attr:`sslSSLContext.minimum_version` and
+    :attr:`sslSSLContext.maximum_version`.
+
+  * :data:`~ssl.PROTOCOL_SSLv2`, :data:`~ssl.PROTOCOL_SSLv3`,
+    :data:`~ssl.PROTOCOL_SSLv23`, :data:`~ssl.PROTOCOL_TLSv1`,
+    :data:`~ssl.PROTOCOL_TLSv1_1`, :data:`~ssl.PROTOCOL_TLSv1_2`, and
+    :data:`~ssl.PROTOCOL_TLS` are deprecated in favor of
+    :data:`~ssl.PROTOCOL_TLS_CLIENT` and :data:`~ssl.PROTOCOL_TLS_SERVER`
+
+  * :func:`~ssl.wrap_socket` is replaced by :meth:`ssl.SSLContext.wrap_socket`
+
+  * :func:`~ssl.match_hostname`
+
+  * :func:`~ssl.RAND_pseudo_bytes`, :func:`~ssl.RAND_egd`
+
+  * NPN features like :meth:`ssl.SSLSocket.selected_npn_protocol` and
+    :meth:`ssl.SSLContext.set_npn_protocols` are replaced by ALPN.
+
 .. _whatsnew310-removed:
 
 Removed
@@ -1643,9 +1713,9 @@ Removed
   that were only being used by the old parser, including ``node.h``, ``parser.h``,
   ``graminit.h`` and ``grammar.h``.
 
-* Removed the Public C API functions :c:func:`PyParser_SimpleParseStringFlags`,
-  :c:func:`PyParser_SimpleParseStringFlagsFilename`,
-  :c:func:`PyParser_SimpleParseFileFlags` and :c:func:`PyNode_Compile`
+* Removed the Public C API functions ``PyParser_SimpleParseStringFlags``,
+  ``PyParser_SimpleParseStringFlagsFilename``,
+  ``PyParser_SimpleParseFileFlags`` and ``PyNode_Compile``
   that were deprecated in 3.9 due to the switch to the new PEG parser.
 
 * Removed the ``formatter`` module, which was deprecated in Python 3.4.
@@ -1758,6 +1828,41 @@ Changes in the Python API
   in Python is not affected, globals cannot be overriden with this syntax: it
   also inherits the current builtins.
   (Contributed by Victor Stinner in :issue:`42990`.)
+
+Changes in the C API
+--------------------
+
+* The C API functions ``PyParser_SimpleParseStringFlags``,
+  ``PyParser_SimpleParseStringFlagsFilename``,
+  ``PyParser_SimpleParseFileFlags``, ``PyNode_Compile`` and the type
+  used by these functions, ``struct _node``, were removed due to the switch
+  to the new PEG parser.
+
+  Source should be now be compiled directly to a code object using, for
+  example, :c:func:`Py_CompileString`. The resulting code object can then be
+  evaluated using, for example, :c:func:`PyEval_EvalCode`.
+
+  Specifically:
+
+  * A call to ``PyParser_SimpleParseStringFlags`` followed by
+    ``PyNode_Compile`` can be replaced by calling :c:func:`Py_CompileString`.
+
+  * There is no direct replacement for ``PyParser_SimpleParseFileFlags``.
+    To compile code from a ``FILE *`` argument, you will need to read
+    the file in C and pass the resulting buffer to :c:func:`Py_CompileString`.
+
+  * To compile a file given a ``char *`` filename, explicitly open the file, read
+    it and compile the result. One way to do this is using the :py:mod:`io`
+    module with :c:func:`PyImport_ImportModule`, :c:func:`PyObject_CallMethod`,
+    :c:func:`PyBytes_AsString` and :c:func:`Py_CompileString`,
+    as sketched below. (Declarations and error handling are omitted.) ::
+
+       io_module = Import_ImportModule("io");
+       fileobject = PyObject_CallMethod(io_module, "open", "ss", filename, "rb");
+       source_bytes_object = PyObject_CallMethod(fileobject, "read", "");
+       result = PyObject_CallMethod(fileobject, "close", "");
+       source_buf = PyBytes_AsString(source_bytes_object);
+       code = Py_CompileString(source_buf, filename, Py_file_input);
 
 CPython bytecode changes
 ========================

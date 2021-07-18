@@ -372,6 +372,8 @@ tok_reserve_buf(struct tok_state *tok, Py_ssize_t size)
     if (newsize > tok->end - tok->buf) {
         char *newbuf = tok->buf;
         Py_ssize_t start = tok->start == NULL ? -1 : tok->start - tok->buf;
+        Py_ssize_t line_start = tok->start == NULL ? -1 : tok->line_start - tok->buf;
+        Py_ssize_t multi_line_start = tok->multi_line_start - tok->buf;
         newbuf = (char *)PyMem_Realloc(newbuf, newsize);
         if (newbuf == NULL) {
             tok->done = E_NOMEM;
@@ -382,6 +384,8 @@ tok_reserve_buf(struct tok_state *tok, Py_ssize_t size)
         tok->inp = tok->buf + oldsize;
         tok->end = tok->buf + newsize;
         tok->start = start < 0 ? NULL : tok->buf + start;
+        tok->line_start = line_start < 0 ? NULL : tok->buf + line_start;
+        tok->multi_line_start = multi_line_start < 0 ? NULL : tok->buf + multi_line_start;
     }
     return 1;
 }
@@ -1067,19 +1071,13 @@ tok_backup(struct tok_state *tok, int c)
     }
 }
 
-
 static int
-syntaxerror(struct tok_state *tok, const char *format, ...)
+_syntaxerror_range(struct tok_state *tok, const char *format,
+                   int col_offset, int end_col_offset,
+                   va_list vargs)
 {
     PyObject *errmsg, *errtext, *args;
-    va_list vargs;
-#ifdef HAVE_STDARG_PROTOTYPES
-    va_start(vargs, format);
-#else
-    va_start(vargs);
-#endif
     errmsg = PyUnicode_FromFormatV(format, vargs);
-    va_end(vargs);
     if (!errmsg) {
         goto error;
     }
@@ -1089,7 +1087,14 @@ syntaxerror(struct tok_state *tok, const char *format, ...)
     if (!errtext) {
         goto error;
     }
-    int offset = (int)PyUnicode_GET_LENGTH(errtext);
+
+    if (col_offset == -1) {
+        col_offset = (int)PyUnicode_GET_LENGTH(errtext);
+    }
+    if (end_col_offset == -1) {
+        end_col_offset = col_offset;
+    }
+
     Py_ssize_t line_len = strcspn(tok->line_start, "\n");
     if (line_len != tok->cur - tok->line_start) {
         Py_DECREF(errtext);
@@ -1100,8 +1105,8 @@ syntaxerror(struct tok_state *tok, const char *format, ...)
         goto error;
     }
 
-    args = Py_BuildValue("(O(OiiN))", errmsg,
-                         tok->filename, tok->lineno, offset, errtext);
+    args = Py_BuildValue("(O(OiiNii))", errmsg, tok->filename, tok->lineno,
+                         col_offset, errtext, tok->lineno, end_col_offset);
     if (args) {
         PyErr_SetObject(PyExc_SyntaxError, args);
         Py_DECREF(args);
@@ -1112,6 +1117,38 @@ error:
     tok->done = E_ERROR;
     return ERRORTOKEN;
 }
+
+static int
+syntaxerror(struct tok_state *tok, const char *format, ...)
+{
+    va_list vargs;
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    int ret = _syntaxerror_range(tok, format, -1, -1, vargs);
+    va_end(vargs);
+    return ret;
+}
+
+static int
+syntaxerror_known_range(struct tok_state *tok,
+                        int col_offset, int end_col_offset,
+                        const char *format, ...)
+{
+    va_list vargs;
+#ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, format);
+#else
+    va_start(vargs);
+#endif
+    int ret = _syntaxerror_range(tok, format, col_offset, end_col_offset, vargs);
+    va_end(vargs);
+    return ret;
+}
+
+
 
 static int
 indenterror(struct tok_state *tok)
@@ -1688,12 +1725,12 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
                         c = tok_nextc(tok);
                     }
                     if (c < '0' || c >= '8') {
-                        tok_backup(tok, c);
                         if (isdigit(c)) {
                             return syntaxerror(tok,
                                     "invalid digit '%c' in octal literal", c);
                         }
                         else {
+                            tok_backup(tok, c);
                             return syntaxerror(tok, "invalid octal literal");
                         }
                     }
@@ -1717,12 +1754,12 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
                         c = tok_nextc(tok);
                     }
                     if (c != '0' && c != '1') {
-                        tok_backup(tok, c);
                         if (isdigit(c)) {
                             return syntaxerror(tok,
                                     "invalid digit '%c' in binary literal", c);
                         }
                         else {
+                            tok_backup(tok, c);
                             return syntaxerror(tok, "invalid binary literal");
                         }
                     }
@@ -1755,6 +1792,7 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
                     }
                     c = tok_nextc(tok);
                 }
+                char* zeros_end = tok->cur;
                 if (isdigit(c)) {
                     nonzero = 1;
                     c = tok_decimal_tail(tok);
@@ -1775,10 +1813,12 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
                 else if (nonzero) {
                     /* Old-style octal: now disallowed. */
                     tok_backup(tok, c);
-                    return syntaxerror(tok,
-                                       "leading zeros in decimal integer "
-                                       "literals are not permitted; "
-                                       "use an 0o prefix for octal integers");
+                    return syntaxerror_known_range(
+                            tok, (int)(tok->start + 1 - tok->line_start),
+                            (int)(zeros_end - tok->line_start),
+                            "leading zeros in decimal integer "
+                            "literals are not permitted; "
+                            "use an 0o prefix for octal integers");
                 }
                 if (!verify_end_of_number(tok, c, "decimal")) {
                     return ERRORTOKEN;
@@ -1883,6 +1923,7 @@ tok_get(struct tok_state *tok, const char **p_start, const char **p_end)
         while (end_quote_size != quote_size) {
             c = tok_nextc(tok);
             if (c == EOF || (quote_size == 1 && c == '\n')) {
+                assert(tok->multi_line_start != NULL);
                 // shift the tok_state's location into
                 // the start of string, and report the error
                 // from the initial quote character

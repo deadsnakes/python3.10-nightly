@@ -2923,7 +2923,9 @@ compiler_async_for(struct compiler *c, stmt_ty s)
     /* Except block for __anext__ */
     compiler_use_next_block(c, except);
 
-    c->u->u_lineno = -1;
+    /* Use same line number as the iterator,
+     * as the END_ASYNC_FOR succeeds the `for`, not the body. */
+    SET_LOC(c, s->v.AsyncFor.iter);
     ADDOP(c, END_ASYNC_FOR);
 
     /* `else` block */
@@ -3220,10 +3222,10 @@ compiler_try_except(struct compiler *c, stmt_ty s)
             /* second # body */
             VISIT_SEQ(c, stmt, handler->v.ExceptHandler.body);
             compiler_pop_fblock(c, HANDLER_CLEANUP, cleanup_body);
-            ADDOP(c, POP_BLOCK);
-            ADDOP(c, POP_EXCEPT);
             /* name = None; del name; # Mark as artificial */
             c->u->u_lineno = -1;
+            ADDOP(c, POP_BLOCK);
+            ADDOP(c, POP_EXCEPT);
             ADDOP_LOAD_CONST(c, Py_None);
             compiler_nameop(c, handler->v.ExceptHandler.name, Store);
             compiler_nameop(c, handler->v.ExceptHandler.name, Del);
@@ -3254,7 +3256,6 @@ compiler_try_except(struct compiler *c, stmt_ty s)
                 return 0;
             VISIT_SEQ(c, stmt, handler->v.ExceptHandler.body);
             compiler_pop_fblock(c, HANDLER_CLEANUP, cleanup_body);
-            /* name = None; del name; # Mark as artificial */
             c->u->u_lineno = -1;
             ADDOP(c, POP_EXCEPT);
             ADDOP_JUMP(c, JUMP_FORWARD, end);
@@ -4799,6 +4800,7 @@ compiler_comprehension(struct compiler *c, expr_ty e, int type,
     {
         goto error;
     }
+    SET_LOC(c, e);
 
     is_async_generator = c->u->u_ste->ste_coroutine;
 
@@ -5998,20 +6000,53 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
     }
     // Collect all of the keys into a tuple for MATCH_KEYS and
     // COPY_DICT_WITHOUT_KEYS. They can either be dotted names or literals:
+
+    // Maintaining a set of Constant_kind kind keys allows us to raise a
+    // SyntaxError in the case of duplicates.
+    PyObject *seen = PySet_New(NULL);
+    if (seen == NULL) {
+        return 0;
+    }
+
+    // NOTE: goto error on failure in the loop below to avoid leaking `seen`
     for (Py_ssize_t i = 0; i < size; i++) {
         expr_ty key = asdl_seq_GET(keys, i);
         if (key == NULL) {
             const char *e = "can't use NULL keys in MatchMapping "
                             "(set 'rest' parameter instead)";
             SET_LOC(c, ((pattern_ty) asdl_seq_GET(patterns, i)));
-            return compiler_error(c, e);
+            compiler_error(c, e);
+            goto error;
         }
-        if (!MATCH_VALUE_EXPR(key)) {
+
+        if (key->kind == Constant_kind) {
+            int in_seen = PySet_Contains(seen, key->v.Constant.value);
+            if (in_seen < 0) {
+                goto error;
+            }
+            if (in_seen) {
+                const char *e = "mapping pattern checks duplicate key (%R)";
+                compiler_error(c, e, key->v.Constant.value);
+                goto error;
+            }
+            if (PySet_Add(seen, key->v.Constant.value)) {
+                goto error;
+            }
+        }
+
+        else if (key->kind != Attribute_kind) {
             const char *e = "mapping pattern keys may only match literals and attribute lookups";
-            return compiler_error(c, e);
+            compiler_error(c, e);
+            goto error;
         }
-        VISIT(c, expr, key);
+        if (!compiler_visit_expr(c, key)) {
+            goto error;
+        }
     }
+
+    // all keys have been checked; there are no duplicates
+    Py_DECREF(seen);
+
     ADDOP_I(c, BUILD_TUPLE, size);
     ADDOP(c, MATCH_KEYS);
     // There's now a tuple of keys and a tuple of values on top of the subject:
@@ -6046,6 +6081,10 @@ compiler_pattern_mapping(struct compiler *c, pattern_ty p, pattern_context *pc)
     pc->on_top--;
     ADDOP(c, POP_TOP);
     return 1;
+
+error:
+    Py_DECREF(seen);
+    return 0;
 }
 
 static int
@@ -6895,10 +6934,11 @@ makecode(struct compiler *c, struct assembler *a, PyObject *consts)
 /* For debugging purposes only */
 #if 0
 static void
-dump_instr(const struct instr *i)
+dump_instr(struct instr *i)
 {
-    const char *jrel = (is_relative_jump(instr)) ? "jrel " : "";
-    const char *jabs = (is_jump(instr) && !is_relative_jump(instr))? "jabs " : "";
+    const char *jrel = (is_relative_jump(i)) ? "jrel " : "";
+    const char *jabs = (is_jump(i) && !is_relative_jump(i))? "jabs " : "";
+
     char arg[128];
 
     *arg = '\0';
@@ -6934,6 +6974,9 @@ optimize_cfg(struct compiler *c, struct assembler *a, PyObject *consts);
 
 static int
 ensure_exits_have_lineno(struct compiler *c);
+
+static int
+extend_block(basicblock *bb);
 
 static int
 insert_generator_prefix(struct compiler *c, basicblock *entryblock) {
@@ -7024,6 +7067,12 @@ assemble(struct compiler *c, int addNone)
         }
     }
 
+    for (basicblock *b = c->u->u_blocks; b != NULL; b = b->b_list) {
+        if (extend_block(b)) {
+            return NULL;
+        }
+    }
+
     if (ensure_exits_have_lineno(c)) {
         return NULL;
     }
@@ -7057,6 +7106,7 @@ assemble(struct compiler *c, int addNone)
     if (consts == NULL) {
         goto error;
     }
+
     if (optimize_cfg(c, &a, consts)) {
         goto error;
     }
@@ -7420,19 +7470,14 @@ optimize_basic_block(struct compiler *c, basicblock *bb, PyObject *consts)
                             goto error;
                         }
                         break;
-                    default:
-                        if (inst->i_target->b_exit && inst->i_target->b_iused <= MAX_COPY_SIZE) {
-                            basicblock *to_copy = inst->i_target;
-                            inst->i_opcode = NOP;
-                            for (i = 0; i < to_copy->b_iused; i++) {
-                                int index = compiler_next_instr(bb);
-                                if (index < 0) {
-                                    return -1;
-                                }
-                                bb->b_instr[index] = to_copy->b_instr[i];
-                            }
-                            bb->b_exit = 1;
-                        }
+                }
+                break;
+            case FOR_ITER:
+                assert (i == bb->b_iused-1);
+                if (target->i_opcode == JUMP_FORWARD) {
+                    if (eliminate_jump_to_jump(bb, inst->i_opcode)) {
+                        goto error;
+                    }
                 }
                 break;
             case ROT_N:
@@ -7462,6 +7507,32 @@ error:
     return -1;
 }
 
+/* If this block ends with an unconditional jump to an exit block,
+ * then remove the jump and extend this block with the target.
+ */
+static int
+extend_block(basicblock *bb) {
+    if (bb->b_iused == 0) {
+        return 0;
+    }
+    struct instr *last = &bb->b_instr[bb->b_iused-1];
+    if (last->i_opcode != JUMP_ABSOLUTE && last->i_opcode != JUMP_FORWARD) {
+        return 0;
+    }
+    if (last->i_target->b_exit && last->i_target->b_iused <= MAX_COPY_SIZE) {
+        basicblock *to_copy = last->i_target;
+        last->i_opcode = NOP;
+        for (int i = 0; i < to_copy->b_iused; i++) {
+            int index = compiler_next_instr(bb);
+            if (index < 0) {
+                return -1;
+            }
+            bb->b_instr[index] = to_copy->b_instr[i];
+        }
+        bb->b_exit = 1;
+    }
+    return 0;
+}
 
 static void
 clean_basic_block(basicblock *bb, int prev_lineno) {
