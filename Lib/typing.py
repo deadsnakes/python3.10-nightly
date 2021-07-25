@@ -375,6 +375,12 @@ class _SpecialForm(_Final, _root=True):
     def __call__(self, *args, **kwds):
         raise TypeError(f"Cannot instantiate {self!r}")
 
+    def __or__(self, other):
+        return Union[self, other]
+
+    def __ror__(self, other):
+        return Union[other, self]
+
     def __instancecheck__(self, obj):
         raise TypeError(f"{self} cannot be used with isinstance()")
 
@@ -2375,8 +2381,10 @@ class NewType:
     """
 
     def __init__(self, name, tp):
-        self.__name__ = name
         self.__qualname__ = name
+        if '.' in name:
+            name = name.rpartition('.')[-1]
+        self.__name__ = name
         self.__module__ = _callee(default='typing')
         self.__supertype__ = tp
 
@@ -2385,6 +2393,9 @@ class NewType:
 
     def __call__(self, x):
         return x
+
+    def __reduce__(self):
+        return self.__qualname__
 
     def __or__(self, other):
         return Union[self, other]
