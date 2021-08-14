@@ -1014,6 +1014,9 @@ class ExceptionTests(unittest.TestCase):
 
     def test_no_hang_on_context_chain_cycle2(self):
         # See issue 25782. Cycle at head of context chain.
+        while gc.collect():
+            # Remove this once issue 44895 is resolved
+            pass
 
         class A(Exception):
             pass
@@ -1171,7 +1174,7 @@ class ExceptionTests(unittest.TestCase):
 
 
     @cpython_only
-    def test_crashcan_recursion(self):
+    def test_trashcan_recursion(self):
         # See bpo-33930
 
         def foo():
