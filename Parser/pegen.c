@@ -79,7 +79,9 @@ _PyPegen_check_barry_as_flufl(Parser *p, Token* t) {
 
 int
 _PyPegen_check_legacy_stmt(Parser *p, expr_ty name) {
-    assert(name->kind == Name_kind);
+    if (name->kind != Name_kind) {
+        return 0;
+    }
     const char* candidates[2] = {"print", "exec"};
     for (int i=0; i<2; i++) {
         if (PyUnicode_CompareWithASCIIString(name->v.Name.id, candidates[i]) == 0) {
@@ -401,8 +403,12 @@ _PyPegen_raise_error(Parser *p, PyObject *errtype, const char *errmsg, ...)
     Py_ssize_t col_offset;
     Py_ssize_t end_col_offset = -1;
     if (t->col_offset == -1) {
-        col_offset = Py_SAFE_DOWNCAST(p->tok->cur - p->tok->buf,
-                                      intptr_t, int);
+        if (p->tok->cur == p->tok->buf) {
+            col_offset = 0;
+        } else {
+            const char* start = p->tok->buf  ? p->tok->line_start : p->tok->buf;
+            col_offset = Py_SAFE_DOWNCAST(p->tok->cur - start, intptr_t, int);
+        }
     } else {
         col_offset = t->col_offset + 1;
     }
@@ -426,9 +432,10 @@ get_error_line(Parser *p, Py_ssize_t lineno)
      * (multi-line) statement are stored in p->tok->interactive_src_start.
      * If not, we're parsing from a string, which means that the whole source
      * is stored in p->tok->str. */
-    assert(p->tok->fp == NULL || p->tok->fp == stdin);
+    assert((p->tok->fp == NULL && p->tok->str != NULL) || p->tok->fp == stdin);
 
     char *cur_line = p->tok->fp_interactive ? p->tok->interactive_src_start : p->tok->str;
+    assert(cur_line != NULL);
 
     for (int i = 0; i < lineno - 1; i++) {
         cur_line = strchr(cur_line, '\n') + 1;
@@ -480,14 +487,12 @@ _PyPegen_raise_error_known_location(Parser *p, PyObject *errtype,
         goto error;
     }
 
-    // PyErr_ProgramTextObject assumes that the text is utf-8 so we cannot call it with a file
-    // with an arbitrary encoding or otherwise we could get some badly decoded text.
-    int uses_utf8_codec = (!p->tok->encoding || strcmp(p->tok->encoding, "utf-8") == 0);
     if (p->tok->fp_interactive) {
         error_line = get_error_line(p, lineno);
     }
-    else if (uses_utf8_codec && p->start_rule == Py_file_input) {
-        error_line = PyErr_ProgramTextObject(p->tok->filename, (int) lineno);
+    else if (p->start_rule == Py_file_input) {
+        error_line = _PyErr_ProgramDecodedTextObject(p->tok->filename,
+                                                     (int) lineno, p->tok->encoding);
     }
 
     if (!error_line) {
@@ -498,14 +503,17 @@ _PyPegen_raise_error_known_location(Parser *p, PyObject *errtype,
            we're actually parsing from a file, which has an E_EOF SyntaxError and in that case
            `PyErr_ProgramTextObject` fails because lineno points to last_file_line + 1, which
            does not physically exist */
-        assert(p->tok->fp == NULL || p->tok->fp == stdin || p->tok->done == E_EOF || !uses_utf8_codec);
+        assert(p->tok->fp == NULL || p->tok->fp == stdin || p->tok->done == E_EOF);
 
         if (p->tok->lineno <= lineno && p->tok->inp > p->tok->buf) {
             Py_ssize_t size = p->tok->inp - p->tok->buf;
             error_line = PyUnicode_DecodeUTF8(p->tok->buf, size, "replace");
         }
-        else {
+        else if (p->tok->fp == NULL || p->tok->fp == stdin) {
             error_line = get_error_line(p, lineno);
+        }
+        else {
+            error_line = PyUnicode_FromStringAndSize("", 0);
         }
         if (!error_line) {
             goto error;
