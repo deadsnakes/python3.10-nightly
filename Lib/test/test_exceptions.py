@@ -226,13 +226,14 @@ class ExceptionTests(unittest.TestCase):
         check(b'Python = "\xcf\xb3\xf2\xee\xed" +', 1, 18)
         check('x = "a', 1, 5)
         check('lambda x: x = 2', 1, 1)
-        check('f{a + b + c}', 1, 2)
+        check('f{a + b + c}', 1, 1)
         check('[file for str(file) in []\n])', 1, 11)
         check('a = « hello » « world »', 1, 5)
         check('[\nfile\nfor str(file)\nin\n[]\n]', 3, 5)
         check('[file for\n str(file) in []]', 2, 2)
         check("ages = {'Alice'=22, 'Bob'=23}", 1, 16)
         check('match ...:\n    case {**rest, "key": value}:\n        ...', 2, 19)
+        check("a b c d e f", 1, 1)
 
         # Errors thrown by compile.c
         check('class foo:return 1', 1, 11)
@@ -2349,6 +2350,19 @@ class SyntaxErrorTests(unittest.TestCase):
 
             self.assertEqual(err[-3], '    "┬ó┬ó┬ó┬ó┬ó┬ó" + f(4, x for x in range(1))')
             self.assertEqual(err[-2], '                          ^^^^^^^^^^^^^^^^^^^')
+        finally:
+            unlink(TESTFN)
+
+        # Check backwards tokenizer errors
+        source = '# -*- coding: ascii -*-\n\n(\n'
+        try:
+            with open(TESTFN, 'w', encoding='ascii') as testfile:
+                testfile.write(source)
+            rc, out, err = script_helper.assert_python_failure('-Wd', '-X', 'utf8', TESTFN)
+            err = err.decode('utf-8').splitlines()
+
+            self.assertEqual(err[-3], '    (')
+            self.assertEqual(err[-2], '    ^')
         finally:
             unlink(TESTFN)
 
