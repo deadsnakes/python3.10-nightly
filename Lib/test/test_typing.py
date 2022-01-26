@@ -19,6 +19,7 @@ from typing import get_origin, get_args
 from typing import is_typeddict
 from typing import no_type_check, no_type_check_decorator
 from typing import Type
+from typing import NewType
 from typing import NamedTuple, TypedDict
 from typing import IO, TextIO, BinaryIO
 from typing import Pattern, Match
@@ -4581,6 +4582,14 @@ class AnnotatedTests(BaseTestCase):
         self.assertEqual(A.classvar, 4)
         A.x = 5
         self.assertEqual(C.x, 5)
+
+    def test_special_form_containment(self):
+        class C:
+            classvar: Annotated[ClassVar[int], "a decoration"] = 4
+            const: Annotated[Final[int], "Const"] = 4
+
+        self.assertEqual(get_type_hints(C, globals())['classvar'], ClassVar[int])
+        self.assertEqual(get_type_hints(C, globals())['const'], Final[int])
 
     def test_hash_eq(self):
         self.assertEqual(len({Annotated[int, 4, 5], Annotated[int, 4, 5]}), 1)
