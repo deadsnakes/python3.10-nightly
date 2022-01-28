@@ -134,12 +134,12 @@ __all__ = [
 # legitimate imports of those modules.
 
 
-def _type_convert(arg, module=None):
+def _type_convert(arg, module=None, *, allow_special_forms=False):
     """For converting None to type(None), and strings to ForwardRef."""
     if arg is None:
         return type(None)
     if isinstance(arg, str):
-        return ForwardRef(arg, module=module)
+        return ForwardRef(arg, module=module, is_class=allow_special_forms)
     return arg
 
 
@@ -161,7 +161,7 @@ def _type_check(arg, msg, is_argument=True, module=None, *, allow_special_forms=
         if is_argument:
             invalid_generic_forms += (Final,)
 
-    arg = _type_convert(arg, module=module)
+    arg = _type_convert(arg, module=module, allow_special_forms=allow_special_forms)
     if (isinstance(arg, _GenericAlias) and
             arg.__origin__ in invalid_generic_forms):
         raise TypeError(f"{arg} is not valid as type argument")
@@ -598,7 +598,7 @@ def Concatenate(self, parameters):
         raise TypeError("The last parameter to Concatenate should be a "
                         "ParamSpec variable.")
     msg = "Concatenate[arg, ...]: each arg must be a type."
-    parameters = tuple(_type_check(p, msg) for p in parameters)
+    parameters = (*(_type_check(p, msg) for p in parameters[:-1]), parameters[-1])
     return _ConcatenateGenericAlias(self, parameters)
 
 
@@ -1273,6 +1273,16 @@ class _ConcatenateGenericAlias(_GenericAlias, _root=True):
         super().__init__(*args, **kwargs,
                          _typevar_types=(TypeVar, ParamSpec),
                          _paramspec_tvars=True)
+
+    def copy_with(self, params):
+        if isinstance(params[-1], (list, tuple)):
+            return (*params[:-1], *params[-1])
+        if isinstance(params[-1], _ConcatenateGenericAlias):
+            params = (*params[:-1], *params[-1].__args__)
+        elif not isinstance(params[-1], ParamSpec):
+            raise TypeError("The last parameter to Concatenate should be a "
+                            "ParamSpec variable.")
+        return super().copy_with(params)
 
 
 class Generic:
