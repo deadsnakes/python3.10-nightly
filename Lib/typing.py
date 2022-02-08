@@ -165,7 +165,7 @@ def _type_check(arg, msg, is_argument=True, module=None, *, allow_special_forms=
     if (isinstance(arg, _GenericAlias) and
             arg.__origin__ in invalid_generic_forms):
         raise TypeError(f"{arg} is not valid as type argument")
-    if arg in (Any, NoReturn, Final):
+    if arg in (Any, NoReturn, Final, TypeAlias):
         return arg
     if isinstance(arg, _SpecialForm) or arg in (Generic, Protocol):
         raise TypeError(f"Plain {arg} is not valid as type argument")
@@ -830,6 +830,11 @@ class ParamSpecArgs(_Final, _Immutable, _root=True):
     def __repr__(self):
         return f"{self.__origin__.__name__}.args"
 
+    def __eq__(self, other):
+        if not isinstance(other, ParamSpecArgs):
+            return NotImplemented
+        return self.__origin__ == other.__origin__
+
 
 class ParamSpecKwargs(_Final, _Immutable, _root=True):
     """The kwargs for a ParamSpec object.
@@ -848,6 +853,11 @@ class ParamSpecKwargs(_Final, _Immutable, _root=True):
 
     def __repr__(self):
         return f"{self.__origin__.__name__}.kwargs"
+
+    def __eq__(self, other):
+        if not isinstance(other, ParamSpecKwargs):
+            return NotImplemented
+        return self.__origin__ == other.__origin__
 
 
 class ParamSpec(_Final, _Immutable, _TypeVarLike, _root=True):
