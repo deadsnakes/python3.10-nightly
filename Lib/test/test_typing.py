@@ -4768,6 +4768,11 @@ class TypeAliasTests(BaseTestCase):
         with self.assertRaises(TypeError):
             isinstance(42, TypeAlias)
 
+    def test_stringized_usage(self):
+        class A:
+            a: "TypeAlias"
+        self.assertEqual(get_type_hints(A), {'a': TypeAlias})
+
     def test_no_issubclass(self):
         with self.assertRaises(TypeError):
             issubclass(Employee, TypeAlias)
@@ -4818,12 +4823,20 @@ class ParamSpecTests(BaseTestCase):
 
     def test_args_kwargs(self):
         P = ParamSpec('P')
+        P_2 = ParamSpec('P_2')
         self.assertIn('args', dir(P))
         self.assertIn('kwargs', dir(P))
         self.assertIsInstance(P.args, ParamSpecArgs)
         self.assertIsInstance(P.kwargs, ParamSpecKwargs)
         self.assertIs(P.args.__origin__, P)
         self.assertIs(P.kwargs.__origin__, P)
+        self.assertEqual(P.args, P.args)
+        self.assertEqual(P.kwargs, P.kwargs)
+        self.assertNotEqual(P.args, P_2.args)
+        self.assertNotEqual(P.kwargs, P_2.kwargs)
+        self.assertNotEqual(P.args, P.kwargs)
+        self.assertNotEqual(P.kwargs, P.args)
+        self.assertNotEqual(P.args, P_2.kwargs)
         self.assertEqual(repr(P.args), "P.args")
         self.assertEqual(repr(P.kwargs), "P.kwargs")
 
