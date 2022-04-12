@@ -3,11 +3,11 @@ Date: Thu, 14 Feb 2019 18:59:14 -0800
 Subject: setup-modules
 
 ---
- Modules/Setup | 24 ++++++------------------
- 1 file changed, 6 insertions(+), 18 deletions(-)
+ Modules/Setup | 26 +++++++-------------------
+ 1 file changed, 7 insertions(+), 19 deletions(-)
 
 diff --git a/Modules/Setup b/Modules/Setup
-index 87c6a15..78e1e54 100644
+index 87c6a15..584a527 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
 @@ -175,7 +175,7 @@ _symtable symtablemodule.c
@@ -19,10 +19,11 @@ index 87c6a15..78e1e54 100644
  #_pickle -DPy_BUILD_CORE_MODULE _pickle.c	# pickle accelerator
  #_datetime _datetimemodule.c	# datetime accelerator
  #_zoneinfo _zoneinfo.c -DPy_BUILD_CORE_MODULE	# zoneinfo accelerator
-@@ -208,22 +208,7 @@ _symtable symtablemodule.c
+@@ -207,23 +207,8 @@ _symtable symtablemodule.c
+ #_socket socketmodule.c
  
  # Socket module helper for SSL support; you must comment out the other
- # socket line above, and edit the OPENSSL variable:
+-# socket line above, and edit the OPENSSL variable:
 -# OPENSSL=/path/to/openssl/directory
 -# _ssl _ssl.c \
 -#     -I$(OPENSSL)/include -L$(OPENSSL)/lib \
@@ -39,6 +40,7 @@ index 87c6a15..78e1e54 100644
 -#_hashlib _hashopenssl.c \
 -#     -I$(OPENSSL)/include -L$(OPENSSL)/lib \
 -#     -l:libcrypto.a -Wl,--exclude-libs,libcrypto.a
++# socket line above, and possibly edit the SSL variable:
 +#_ssl _ssl.c -lssl -lcrypto
  
  # The crypt module is now disabled by default because it breaks builds
