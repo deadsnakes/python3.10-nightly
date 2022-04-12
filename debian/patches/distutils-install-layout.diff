@@ -2,38 +2,27 @@ From: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Date: Thu, 14 Feb 2019 18:59:14 -0800
 Subject: distutils-install-layout
 
+# DP: distutils: Add an option --install-layout=deb, which
+# DP: - installs into $prefix/dist-packages instead of $prefix/site-packages.
+# DP: - doesn't encode the python version into the egg name.
+# DP: distutils: Add an option --install-layout=deb, which
+# DP: - installs into $prefix/dist-packages instead of $prefix/site-packages.
+# DP: - doesn't encode the python version into the egg name.
 ---
- Lib/distutils/command/install.py          | 33 ++++++++++++++++++++--
- Lib/distutils/command/install_egg_info.py | 30 ++++++++++++++++----
- Lib/distutils/sysconfig.py                |  7 +++++
+ Lib/distutils/command/install.py          | 29 ++++++++++++++++++++++++++++-
+ Lib/distutils/command/install_egg_info.py | 30 +++++++++++++++++++++++++-----
+ Lib/distutils/sysconfig.py                |  7 +++++++
  Lib/distutils/tests/test_bdist_dumb.py    |  2 +-
- Lib/distutils/tests/test_install.py       |  4 +--
+ Lib/distutils/tests/test_install.py       |  4 ++--
  Lib/pydoc.py                              |  1 +
- Lib/site.py                               | 26 +++++++++++++----
- Lib/sysconfig.py                          | 46 +++++++++++++++++++++++++++----
- Lib/test/test_site.py                     |  6 ++--
- 9 files changed, 131 insertions(+), 24 deletions(-)
+ Lib/site.py                               | 26 +++++++++++++++++++++-----
+ Lib/test/test_site.py                     |  6 +++---
+ 8 files changed, 88 insertions(+), 17 deletions(-)
 
 diff --git a/Lib/distutils/command/install.py b/Lib/distutils/command/install.py
-index 01d5331..81b501e 100644
+index d25b82f..81b501e 100644
 --- a/Lib/distutils/command/install.py
 +++ b/Lib/distutils/command/install.py
-@@ -33,13 +33,13 @@
- # alter locations for packages installations in a single place.
- # Note that this module is deprecated (PEP 632); all consumers
- # of this information should switch to using sysconfig directly.
--INSTALL_SCHEMES = {"unix_prefix": {}, "unix_home": {}, "nt": {}}
-+INSTALL_SCHEMES = {"unix_prefix": {}, "unix_home": {}, "nt": {}, "unix_local": {}, "deb_system": {}}
- 
- # Copy from sysconfig._INSTALL_SCHEMES
- for key in SCHEME_KEYS:
-     for distutils_scheme_name, sys_scheme_name in (
-             ("unix_prefix", "posix_prefix"), ("unix_home", "posix_home"),
--            ("nt", "nt")):
-+            ("nt", "nt"), ("unix_local", "posix_local"), ("deb_system", "deb_system")):
-         sys_key = key
-         sys_scheme = sysconfig._INSTALL_SCHEMES[sys_scheme_name]
-         if key == "headers" and key not in sys_scheme:
 @@ -148,6 +148,9 @@ class install(Command):
  
          ('record=', None,
@@ -44,7 +33,7 @@ index 01d5331..81b501e 100644
          ]
  
      boolean_options = ['compile', 'force', 'skip-build']
-@@ -168,6 +171,7 @@ def initialize_options(self):
+@@ -168,6 +171,7 @@ class install(Command):
          self.exec_prefix = None
          self.home = None
          self.user = 0
@@ -52,7 +41,7 @@ index 01d5331..81b501e 100644
  
          # These select only the installation base; it's up to the user to
          # specify the installation scheme (currently, that means supplying
-@@ -190,6 +194,9 @@ def initialize_options(self):
+@@ -190,6 +194,9 @@ class install(Command):
              self.install_userbase = USER_BASE
              self.install_usersite = USER_SITE
  
@@ -62,7 +51,7 @@ index 01d5331..81b501e 100644
          self.compile = None
          self.optimize = None
  
-@@ -436,6 +443,7 @@ def finalize_unix(self):
+@@ -436,6 +443,7 @@ class install(Command):
              self.install_base = self.install_platbase = self.home
              self.select_scheme("unix_home")
          else:
@@ -70,7 +59,7 @@ index 01d5331..81b501e 100644
              if self.prefix is None:
                  if self.exec_prefix is not None:
                      raise DistutilsOptionError(
-@@ -450,7 +458,26 @@ def finalize_unix(self):
+@@ -450,7 +458,26 @@ class install(Command):
  
              self.install_base = self.prefix
              self.install_platbase = self.exec_prefix
@@ -175,7 +164,7 @@ diff --git a/Lib/distutils/tests/test_bdist_dumb.py b/Lib/distutils/tests/test_b
 index 01a233b..f99dec5 100644
 --- a/Lib/distutils/tests/test_bdist_dumb.py
 +++ b/Lib/distutils/tests/test_bdist_dumb.py
-@@ -85,7 +85,7 @@ def test_simple_built(self):
+@@ -85,7 +85,7 @@ class BuildDumbTestCase(support.TempdirManager,
              fp.close()
  
          contents = sorted(filter(None, map(os.path.basename, contents)))
@@ -188,7 +177,7 @@ diff --git a/Lib/distutils/tests/test_install.py b/Lib/distutils/tests/test_inst
 index 0632024..bfc8fe1 100644
 --- a/Lib/distutils/tests/test_install.py
 +++ b/Lib/distutils/tests/test_install.py
-@@ -205,7 +205,7 @@ def test_record(self):
+@@ -205,7 +205,7 @@ class InstallTestCase(support.TempdirManager,
          found = [os.path.basename(line) for line in content.splitlines()]
          expected = ['hello.py', 'hello.%s.pyc' % sys.implementation.cache_tag,
                      'sayhi',
@@ -197,7 +186,7 @@ index 0632024..bfc8fe1 100644
          self.assertEqual(found, expected)
  
      def test_record_extensions(self):
-@@ -238,7 +238,7 @@ def test_record_extensions(self):
+@@ -238,7 +238,7 @@ class InstallTestCase(support.TempdirManager,
  
          found = [os.path.basename(line) for line in content.splitlines()]
          expected = [_make_ext_name('xx'),
@@ -210,7 +199,7 @@ diff --git a/Lib/pydoc.py b/Lib/pydoc.py
 index 497d33f..bd64f23 100755
 --- a/Lib/pydoc.py
 +++ b/Lib/pydoc.py
-@@ -509,6 +509,7 @@ def getdocloc(self, object, basedir=sysconfig.get_path('stdlib')):
+@@ -509,6 +509,7 @@ class Doc:
                                   'marshal', 'posix', 'signal', 'sys',
                                   '_thread', 'zipimport') or
               (file.startswith(basedir) and
@@ -267,76 +256,11 @@ index 939893e..0fb8a3f 100644
          else:
              sitepackages.append(prefix)
  
-diff --git a/Lib/sysconfig.py b/Lib/sysconfig.py
-index daf9f00..908ea48 100644
---- a/Lib/sysconfig.py
-+++ b/Lib/sysconfig.py
-@@ -56,7 +56,28 @@
-         'scripts': '{base}/Scripts',
-         'data': '{base}',
-         },
-+    'deb_system': {
-+        'stdlib': '{installed_base}/{platlibdir}/python{py_version_short}',
-+        'platstdlib': '{platbase}/{platlibdir}/python{py_version_short}',
-+        'purelib': '{base}/lib/python3/dist-packages',
-+        'platlib': '{platbase}/{platlibdir}/python3/dist-packages',
-+        'include': '{installed_base}/include/python{py_version_short}{abiflags}',
-+        'platinclude': '{installed_platbase}/include/python{py_version_short}{abiflags}',
-+        'scripts': '{base}/bin',
-+        'data': '{base}',
-+        },
-+    'posix_local': {
-+        'stdlib': '{installed_base}/{platlibdir}/python{py_version_short}',
-+        'platstdlib': '{platbase}/{platlibdir}/python{py_version_short}',
-+        'purelib': '{base}/local/lib/python{py_version_short}/dist-packages',
-+        'platlib': '{platbase}/local/lib/python{py_version_short}/dist-packages',
-+        'include': '{installed_base}/local/include/python{py_version_short}{abiflags}',
-+        'platinclude': '{installed_platbase}/local/include/python{py_version_short}{abiflags}',
-+        'scripts': '{base}/local/bin',
-+        'data': '{base}',
-+        },
-     }
-+_INSTALL_SCHEMES['venv'] = _INSTALL_SCHEMES['posix_prefix']
- 
- 
- # NOTE: site.py has copy of this function.
-@@ -237,11 +258,26 @@ def _get_preferred_schemes():
-             'home': 'posix_home',
-             'user': 'osx_framework_user',
-         }
--    return {
--        'prefix': 'posix_prefix',
--        'home': 'posix_home',
--        'user': 'posix_user',
--    }
-+    # virtual environments
-+    if hasattr(sys, 'real_prefix') or sys.base_prefix != sys.prefix:
-+        return {
-+            'prefix': 'venv',
-+            'home': 'posix_home',
-+            'user': 'posix_user',
-+        }
-+    # default to /usr for package builds, /usr/local otherwise
-+    elif os.environ.get('DEB_PYTHON_INSTALL_LAYOUT') in ('deb', 'deb_system'):
-+        return {
-+            'prefix': 'deb_system',
-+            'home': 'posix_home',
-+            'user': 'posix_user',
-+        }
-+    else:
-+        return {
-+            'prefix': 'posix_local',
-+            'home': 'posix_home',
-+            'user': 'posix_user',
-+        }
- 
- 
- def get_preferred_scheme(key):
 diff --git a/Lib/test/test_site.py b/Lib/test/test_site.py
 index fa74e77..5baf274 100644
 --- a/Lib/test/test_site.py
 +++ b/Lib/test/test_site.py
-@@ -284,16 +284,16 @@ def test_getsitepackages(self):
+@@ -284,16 +284,16 @@ class HelperFunctionsTests(unittest.TestCase):
          if os.sep == '/':
              # OS X, Linux, FreeBSD, etc
              if sys.platlibdir != "lib":
